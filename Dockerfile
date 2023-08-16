@@ -580,6 +580,20 @@ RUN \
   cd libvorbis-* && ./configure --disable-shared --enable-static --disable-oggtest && \
   make -j$(nproc) install
 
+# bump: libwebp /LIBWEBP_VERSION=([\d.]+)/ https://github.com/webmproject/libwebp.git|*
+# bump: libwebp after ./hashupdate Dockerfile LIBWEBP $LATEST
+# bump: libwebp link "Release notes" https://github.com/webmproject/libwebp/releases/tag/v$LATEST
+# bump: libwebp link "Source diff $CURRENT..$LATEST" https://github.com/webmproject/libwebp/compare/v$CURRENT..v$LATEST
+ARG LIBWEBP_VERSION=1.3.1
+ARG LIBWEBP_URL="https://github.com/webmproject/libwebp/archive/v$LIBWEBP_VERSION.tar.gz"
+ARG LIBWEBP_SHA256=1c45f135a20c629c31cebcba62e2b399bae5d6e79851aa82ec6686acedcf6f65
+RUN \
+  wget $WGET_OPTS -O libwebp.tar.gz "$LIBWEBP_URL" && \
+  echo "$LIBWEBP_SHA256  libwebp.tar.gz" | sha256sum --status -c - && \
+  tar xf libwebp.tar.gz && \
+  cd libwebp-* && ./autogen.sh && ./configure --disable-shared --enable-static --with-pic --enable-libwebpmux --disable-libwebpextras --disable-libwebpdemux --disable-sdl --disable-gl --disable-png --disable-jpeg --disable-tiff --disable-gif && \
+  make -j$(nproc) install
+
 # x264 only have a stable branch no tags and we checkout commit so no hash is needed
 # bump: x264 /X264_VERSION=([[:xdigit:]]+)/ gitrefs:https://code.videolan.org/videolan/x264.git|re:#^refs/heads/stable$#|@commit
 # bump: x264 after ./hashupdate Dockerfile X264 $LATEST
