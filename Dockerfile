@@ -62,50 +62,6 @@ ARG WGET_OPTS="--retry-on-host-error --retry-on-http-error=429,500,502,503"
 # adding libbrotlicommon directly to freetype2 required libraries seems to fix it
 RUN sed -i 's/libbrotlidec/libbrotlidec, libbrotlicommon/' /usr/lib/pkgconfig/freetype2.pc
 
-# before aom as libvmaf uses it
-# bump: vmaf /VMAF_VERSION=([\d.]+)/ https://github.com/Netflix/vmaf.git|*
-# bump: vmaf after ./hashupdate Dockerfile VMAF $LATEST
-# bump: vmaf link "Release" https://github.com/Netflix/vmaf/releases/tag/v$LATEST
-# bump: vmaf link "Source diff $CURRENT..$LATEST" https://github.com/Netflix/vmaf/compare/v$CURRENT..v$LATEST
-ARG VMAF_VERSION=2.3.1
-ARG VMAF_URL="https://github.com/Netflix/vmaf/archive/refs/tags/v$VMAF_VERSION.tar.gz"
-ARG VMAF_SHA256=8d60b1ddab043ada25ff11ced821da6e0c37fd7730dd81c24f1fc12be7293ef2
-RUN \
-  wget $WGET_OPTS -O vmaf.tar.gz "$VMAF_URL" && \
-  echo "$VMAF_SHA256  vmaf.tar.gz" | sha256sum --status -c - && \
-  tar xf vmaf.tar.gz && \
-  cd vmaf-*/libvmaf && meson build --buildtype=release -Ddefault_library=static -Dbuilt_in_models=true -Denable_tests=false -Denable_docs=false -Denable_avx512=true -Denable_float=true && \
-  ninja -j$(nproc) -vC build install
-# extra libs stdc++ is for vmaf https://github.com/Netflix/vmaf/issues/788
-RUN sed -i 's/-lvmaf /-lvmaf -lstdc++ /' /usr/local/lib/pkgconfig/libvmaf.pc
-
-# build after libvmaf
-# bump: aom /AOM_VERSION=([\d.]+)/ git:https://aomedia.googlesource.com/aom|*
-# bump: aom after ./hashupdate Dockerfile AOM $LATEST
-# bump: aom after COMMIT=$(git ls-remote https://aomedia.googlesource.com/aom v$LATEST^{} | awk '{print $1}') && sed -i -E "s/^ARG AOM_COMMIT=.*/ARG AOM_COMMIT=$COMMIT/" Dockerfile
-# bump: aom link "CHANGELOG" https://aomedia.googlesource.com/aom/+/refs/tags/v$LATEST/CHANGELOG
-ARG AOM_VERSION=3.6.1
-ARG AOM_URL="https://aomedia.googlesource.com/aom"
-ARG AOM_COMMIT=7ade96172b95adc91a5d85bf80c90989cd543ee8
-RUN \
-  git clone --depth 1 --branch v$AOM_VERSION "$AOM_URL" && \
-  cd aom && test $(git rev-parse HEAD) = $AOM_COMMIT && \
-  mkdir build_tmp && cd build_tmp && \
-  cmake \
-    -G"Unix Makefiles" \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DENABLE_EXAMPLES=NO \
-    -DENABLE_DOCS=NO \
-    -DENABLE_TESTS=NO \
-    -DENABLE_TOOLS=NO \
-    -DCONFIG_TUNE_VMAF=1 \
-    -DENABLE_NASM=ON \
-    -DCMAKE_INSTALL_LIBDIR=lib \
-    .. && \
-  make -j$(nproc) install
-
 # bump: libaribb24 /LIBARIBB24_VERSION=([\d.]+)/ https://github.com/nkoriyama/aribb24.git|*
 # bump: libaribb24 after ./hashupdate Dockerfile LIBARIBB24 $LATEST
 # bump: libaribb24 link "Release notes" https://github.com/nkoriyama/aribb24/releases/tag/$LATEST
@@ -553,22 +509,6 @@ RUN \
   cd libogg-* && ./configure --disable-shared --enable-static && \
   make -j$(nproc) install
 
-# bump: theora /THEORA_VERSION=([\d.]+)/ https://github.com/xiph/theora.git|*
-# bump: theora after ./hashupdate Dockerfile THEORA $LATEST
-# bump: theora link "Release notes" https://github.com/xiph/theora/releases/tag/v$LATEST
-# bump: theora link "Source diff $CURRENT..$LATEST" https://github.com/xiph/theora/compare/v$CURRENT..v$LATEST
-ARG THEORA_VERSION=1.1.1
-ARG THEORA_URL="https://downloads.xiph.org/releases/theora/libtheora-$THEORA_VERSION.tar.bz2"
-ARG THEORA_SHA256=b6ae1ee2fa3d42ac489287d3ec34c5885730b1296f0801ae577a35193d3affbc
-RUN \
-  wget $WGET_OPTS -O libtheora.tar.bz2 "$THEORA_URL" && \
-  echo "$THEORA_SHA256  libtheora.tar.bz2" | sha256sum --status -c - && \
-  tar xf libtheora.tar.bz2 && \
-  # --build=$(arch)-unknown-linux-gnu helps with guessing the correct build. For some reason,
-  # build script can't guess the build type in arm64 (hardware and emulated) environment.
-  cd libtheora-* && ./configure --build=$(arch)-unknown-linux-gnu --disable-examples --disable-oggtest --disable-shared --enable-static && \
-  make -j$(nproc) install
-
 # bump: twolame /TWOLAME_VERSION=([\d.]+)/ https://github.com/njh/twolame.git|*
 # bump: twolame after ./hashupdate Dockerfile TWOLAME $LATEST
 # bump: twolame link "Source diff $CURRENT..$LATEST" https://github.com/njh/twolame/compare/v$CURRENT..v$LATEST
@@ -640,34 +580,6 @@ RUN \
   cd libvorbis-* && ./configure --disable-shared --enable-static --disable-oggtest && \
   make -j$(nproc) install
 
-# bump: libvpx /VPX_VERSION=([\d.]+)/ https://github.com/webmproject/libvpx.git|*
-# bump: libvpx after ./hashupdate Dockerfile VPX $LATEST
-# bump: libvpx link "CHANGELOG" https://github.com/webmproject/libvpx/blob/master/CHANGELOG
-# bump: libvpx link "Source diff $CURRENT..$LATEST" https://github.com/webmproject/libvpx/compare/v$CURRENT..v$LATEST
-ARG VPX_VERSION=1.13.0
-ARG VPX_URL="https://github.com/webmproject/libvpx/archive/v$VPX_VERSION.tar.gz"
-ARG VPX_SHA256=cb2a393c9c1fae7aba76b950bb0ad393ba105409fe1a147ccd61b0aaa1501066
-RUN \
-  wget $WGET_OPTS -O libvpx.tar.gz "$VPX_URL" && \
-  echo "$VPX_SHA256  libvpx.tar.gz" | sha256sum --status -c - && \
-  tar xf libvpx.tar.gz && \
-  cd libvpx-* && ./configure --enable-static --enable-vp9-highbitdepth --disable-shared --disable-unit-tests --disable-examples && \
-  make -j$(nproc) install
-
-# bump: libwebp /LIBWEBP_VERSION=([\d.]+)/ https://github.com/webmproject/libwebp.git|*
-# bump: libwebp after ./hashupdate Dockerfile LIBWEBP $LATEST
-# bump: libwebp link "Release notes" https://github.com/webmproject/libwebp/releases/tag/v$LATEST
-# bump: libwebp link "Source diff $CURRENT..$LATEST" https://github.com/webmproject/libwebp/compare/v$CURRENT..v$LATEST
-ARG LIBWEBP_VERSION=1.3.1
-ARG LIBWEBP_URL="https://github.com/webmproject/libwebp/archive/v$LIBWEBP_VERSION.tar.gz"
-ARG LIBWEBP_SHA256=1c45f135a20c629c31cebcba62e2b399bae5d6e79851aa82ec6686acedcf6f65
-RUN \
-  wget $WGET_OPTS -O libwebp.tar.gz "$LIBWEBP_URL" && \
-  echo "$LIBWEBP_SHA256  libwebp.tar.gz" | sha256sum --status -c - && \
-  tar xf libwebp.tar.gz && \
-  cd libwebp-* && ./autogen.sh && ./configure --disable-shared --enable-static --with-pic --enable-libwebpmux --disable-libwebpextras --disable-libwebpdemux --disable-sdl --disable-gl --disable-png --disable-jpeg --disable-tiff --disable-gif && \
-  make -j$(nproc) install
-
 # x264 only have a stable branch no tags and we checkout commit so no hash is needed
 # bump: x264 /X264_VERSION=([[:xdigit:]]+)/ gitrefs:https://code.videolan.org/videolan/x264.git|re:#^refs/heads/stable$#|@commit
 # bump: x264 after ./hashupdate Dockerfile X264 $LATEST
@@ -719,21 +631,6 @@ RUN \
   cd xavs2-*/build/linux && ./configure --disable-asm --enable-pic --disable-cli && \
   make -j$(nproc) install
 
-# http://websvn.xvid.org/cvs/viewvc.cgi/trunk/xvidcore/build/generic/configure.in?revision=2146&view=markup
-# bump: xvid /XVID_VERSION=([\d.]+)/ svn:http://anonymous:@svn.xvid.org|/^release-(.*)$/|/_/./|^1
-# bump: xvid after ./hashupdate Dockerfile XVID $LATEST
-# add extra CFLAGS that are not enabled by -O3
-ARG XVID_VERSION=1.3.7
-ARG XVID_URL="https://downloads.xvid.com/downloads/xvidcore-$XVID_VERSION.tar.gz"
-ARG XVID_SHA256=abbdcbd39555691dd1c9b4d08f0a031376a3b211652c0d8b3b8aa9be1303ce2d
-RUN \
-  wget $WGET_OPTS -O libxvid.tar.gz "$XVID_URL" && \
-  echo "$XVID_SHA256  libxvid.tar.gz" | sha256sum --status -c - && \
-  tar xf libxvid.tar.gz && \
-  cd xvidcore/build/generic && \
-  CFLAGS="$CFLAGS -fstrength-reduce -ffast-math" ./configure && \
-  make -j$(nproc) && make install
-
 # bump: zimg /ZIMG_VERSION=([\d.]+)/ https://github.com/sekrit-twc/zimg.git|*
 # bump: zimg after ./hashupdate Dockerfile ZIMG $LATEST
 # bump: zimg link "ChangeLog" https://github.com/sekrit-twc/zimg/blob/master/ChangeLog
@@ -747,156 +644,6 @@ RUN \
   cd zimg-* && ./autogen.sh && ./configure --disable-shared --enable-static && \
   make -j$(nproc) install
 
-# bump: ffmpeg /FFMPEG_VERSION=([\d.]+)/ https://github.com/FFmpeg/FFmpeg.git|^6
-# bump: ffmpeg after ./hashupdate Dockerfile FFMPEG $LATEST
-# bump: ffmpeg link "Changelog" https://github.com/FFmpeg/FFmpeg/blob/n$LATEST/Changelog
-# bump: ffmpeg link "Source diff $CURRENT..$LATEST" https://github.com/FFmpeg/FFmpeg/compare/n$CURRENT..n$LATEST
-ARG FFMPEG_VERSION=6.0
-ARG FFMPEG_URL="https://ffmpeg.org/releases/ffmpeg-$FFMPEG_VERSION.tar.bz2"
-ARG FFMPEG_SHA256=47d062731c9f66a78380e35a19aac77cebceccd1c7cc309b9c82343ffc430c3d
-# sed changes --toolchain=hardened -pie to -static-pie
-# extra ldflags stack-size=2097152 is to increase default stack size from 128KB (musl default) to something
-# more similar to glibc (2MB). This fixing segfault with libaom-av1 and libsvtav1 as they seems to pass
-# large things on the stack.
-RUN \
-  wget $WGET_OPTS -O ffmpeg.tar.bz2 "$FFMPEG_URL" && \
-  echo "$FFMPEG_SHA256  ffmpeg.tar.bz2" | sha256sum --status -c - && \
-  tar xf ffmpeg.tar.bz2 && \
-  cd ffmpeg-* && \
-  sed -i 's/add_ldexeflags -fPIE -pie/add_ldexeflags -fPIE -static-pie/' configure && \
-  ./configure \
-  --pkg-config-flags="--static" \
-  --extra-cflags="-fopenmp" \
-  --extra-ldflags="-fopenmp -Wl,-z,stack-size=2097152" \
-  --toolchain=hardened \
-  --disable-debug \
-  --disable-shared \
-  --disable-ffplay \
-  --enable-static \
-  --enable-gpl \
-  --enable-version3 \
-  --enable-nonfree \
-  --enable-fontconfig \
-  --enable-gray \
-  --enable-iconv \
-  --enable-lcms2 \
-  --enable-libaom \
-  --enable-libaribb24 \
-  --enable-libass \
-  --enable-libbluray \
-  --enable-libdav1d \
-  --enable-libdavs2 \
-  --enable-libfdk-aac \
-  --enable-libfreetype \
-  --enable-libfribidi \
-  --enable-libgme \
-  --enable-libgsm \
-  --enable-libkvazaar \
-  --enable-libmodplug \
-  --enable-libmp3lame \
-  --enable-libmysofa \
-  --enable-libopencore-amrnb \
-  --enable-libopencore-amrwb \
-  --enable-libopenjpeg \
-  --enable-libopus \
-  --enable-librabbitmq \
-  --enable-librav1e \
-  --enable-librtmp \
-  --enable-librubberband \
-  --enable-libshine \
-  --enable-libsnappy \
-  --enable-libsoxr \
-  --enable-libspeex \
-  --enable-libsrt \
-  --enable-libssh \
-  --enable-libsvtav1 \
-  --enable-libtheora \
-  --enable-libtwolame \
-  --enable-libuavs3d \
-  --enable-libvidstab \
-  --enable-libvmaf \
-  --enable-libvo-amrwbenc \
-  --enable-libvorbis \
-  --enable-libvpx \
-  --enable-libwebp \
-  --enable-libx264 \
-  --enable-libx265 \
-  --enable-libxavs2 \
-  --enable-libxml2 \
-  --enable-libxvid \
-  --enable-libzimg \
-  --enable-openssl \
-  || (cat ffbuild/config.log ; false) \
-  && make -j$(nproc) install
-
-RUN \
-  EXPAT_VERSION=$(pkg-config --modversion expat) \
-  FFTW_VERSION=$(pkg-config --modversion fftw3) \
-  FONTCONFIG_VERSION=$(pkg-config --modversion fontconfig)  \
-  FREETYPE_VERSION=$(pkg-config --modversion freetype2)  \
-  FRIBIDI_VERSION=$(pkg-config --modversion fribidi)  \
-  LIBSAMPLERATE_VERSION=$(pkg-config --modversion samplerate) \
-  LIBXML2_VERSION=$(pkg-config --modversion libxml-2.0) \
-  OPENSSL_VERSION=$(pkg-config --modversion openssl) \
-  SOXR_VERSION=$(pkg-config --modversion soxr) \
-  LIBVO_AMRWBENC_VERSION=$(pkg-config --modversion vo-amrwbenc) \
-  SNAPPY_VERSION=$(apk info -a snappy | head -n1 | awk '{print $1}' | sed -e 's/snappy-//') \
-  jq -n \
-  '{ \
-  expat: env.EXPAT_VERSION, \
-  "libfdk-aac": env.FDK_AAC_VERSION, \
-  ffmpeg: env.FFMPEG_VERSION, \
-  fftw: env.FFTW_VERSION, \
-  fontconfig: env.FONTCONFIG_VERSION, \
-  lcms2: env.LCMS2_VERSION, \
-  libaom: env.AOM_VERSION, \
-  libaribb24: env.LIBARIBB24_VERSION, \
-  libass: env.LIBASS_VERSION, \
-  libbluray: env.LIBBLURAY_VERSION, \
-  libdav1d: env.DAV1D_VERSION, \
-  libdavs2: env.DAVS2_VERSION, \
-  libfreetype: env.FREETYPE_VERSION, \
-  libfribidi: env.FRIBIDI_VERSION, \
-  libgme: env.LIBGME_COMMIT, \
-  libgsm: env.LIBGSM_COMMIT, \
-  libkvazaar: env.KVAZAAR_VERSION, \
-  libmodplug: env.LIBMODPLUG_VERSION, \
-  libmp3lame: env.MP3LAME_VERSION, \
-  libmysofa: env.LIBMYSOFA_VERSION, \
-  libogg: env.OGG_VERSION, \
-  libopencoreamr: env.OPENCOREAMR_VERSION, \
-  libopenjpeg: env.OPENJPEG_VERSION, \
-  libopus: env.OPUS_VERSION, \
-  librabbitmq: env.LIBRABBITMQ_VERSION, \
-  librav1e: env.RAV1E_VERSION, \
-  librtmp: env.LIBRTMP_COMMIT, \
-  librubberband: env.RUBBERBAND_VERSION, \
-  libsamplerate: env.LIBSAMPLERATE_VERSION, \
-  libshine: env.LIBSHINE_VERSION, \
-  libsoxr: env.SOXR_VERSION, \
-  libsnappy: env.SNAPPY_VERSION, \
-  libspeex: env.SPEEX_VERSION, \
-  libsrt: env.SRT_VERSION, \
-  libssh: env.LIBSSH_VERSION, \
-  libsvtav1: env.SVTAV1_VERSION, \
-  libtheora: env.THEORA_VERSION, \
-  libtwolame: env.TWOLAME_VERSION, \
-  libuavs3d: env.UAVS3D_COMMIT, \
-  libvidstab: env.VIDSTAB_VERSION, \
-  libvmaf: env.VMAF_VERSION, \
-  libvo_amrwbenc: env.LIBVO_AMRWBENC_VERSION, \
-  libvorbis: env.VORBIS_VERSION, \
-  libvpx: env.VPX_VERSION, \
-  libwebp: env.LIBWEBP_VERSION, \
-  libx264: env.X264_VERSION, \
-  libx265: env.X265_VERSION, \
-  libxavs2: env.XAVS2_VERSION, \
-  libxml2: env.LIBXML2_VERSION, \
-  libxvid: env.XVID_VERSION, \
-  libzimg: env.ZIMG_VERSION, \
-  openssl: env.OPENSSL_VERSION, \
-  }' > /versions.json
-
 # make sure binaries has no dependencies, is relro, pie and stack nx
 COPY checkelf /
 RUN \
@@ -907,17 +654,6 @@ FROM scratch AS final1
 COPY --from=builder /versions.json /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /
 COPY --from=builder /usr/local/share/doc/ffmpeg/* /doc/
 COPY --from=builder /etc/ssl/cert.pem /etc/ssl/cert.pem
-
-# sanity tests
-RUN ["/ffmpeg", "-version"]
-RUN ["/ffprobe", "-version"]
-RUN ["/ffmpeg", "-hide_banner", "-buildconf"]
-# stack size
-RUN ["/ffmpeg", "-f", "lavfi", "-i", "testsrc", "-c:v", "libsvtav1", "-t", "100ms", "-f", "null", "-"]
-# dns
-RUN ["/ffprobe", "-i", "https://github.com/favicon.ico"]
-# tls/https certs
-RUN ["/ffprobe", "-tls_verify", "1", "-ca_file", "/etc/ssl/cert.pem", "-i", "https://github.com/favicon.ico"]
 
 # clamp all files into one layer
 FROM scratch AS final2
