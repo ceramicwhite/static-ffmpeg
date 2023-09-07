@@ -384,6 +384,61 @@ RUN \
   CFLAGS="$CFLAGS -fstrength-reduce -ffast-math" ./configure && \
   make -j$(nproc) && make install
 
+# bump: ffmpeg /FFMPEG_VERSION=([\d.]+)/ https://github.com/FFmpeg/FFmpeg.git|^6
+# bump: ffmpeg after ./hashupdate Dockerfile FFMPEG $LATEST
+# bump: ffmpeg link "Changelog" https://github.com/FFmpeg/FFmpeg/blob/n$LATEST/Changelog
+# bump: ffmpeg link "Source diff $CURRENT..$LATEST" https://github.com/FFmpeg/FFmpeg/compare/n$CURRENT..n$LATEST
+ARG FFMPEG_VERSION=6.0
+ARG FFMPEG_URL="https://ffmpeg.org/releases/ffmpeg-$FFMPEG_VERSION.tar.bz2"
+ARG FFMPEG_SHA256=47d062731c9f66a78380e35a19aac77cebceccd1c7cc309b9c82343ffc430c3d
+# sed changes --toolchain=hardened -pie to -static-pie
+# extra ldflags stack-size=2097152 is to increase default stack size from 128KB (musl default) to something
+# more similar to glibc (2MB). This fixing segfault with libaom-av1 and libsvtav1 as they seems to pass
+# large things on the stack.
+
+RUN \
+  wget $WGET_OPTS -O ffmpeg.tar.bz2 "$FFMPEG_URL" && \
+  echo "$FFMPEG_SHA256  ffmpeg.tar.bz2" | sha256sum --status -c - && \
+  tar xf ffmpeg.tar.bz2 && \
+  cd ffmpeg-* && \
+  sed -i 's/add_ldexeflags -fPIE -pie/add_ldexeflags -fPIE -static-pie/' configure && \
+  ./configure \
+  --pkg-config-flags="--static" \
+  --extra-cflags="-fopenmp" \
+  --extra-ldflags="-fopenmp -Wl,-z,stack-size=2097152" \
+  --toolchain=hardened \
+  --disable-debug \
+  --disable-shared \
+  --disable-ffplay \
+  --enable-static \
+  --enable-gpl \
+  --enable-version3 \
+  --enable-nonfree \
+  --enable-fontconfig \
+  --enable-gray \
+  --enable-iconv \
+  --enable-libfdk-aac \
+  --enable-libgsm \
+  --enable-libmp3lame \
+  --enable-libopencore-amrnb \
+  --enable-libopencore-amrwb \
+  --enable-libopenjpeg \
+  --enable-libopus \
+  --enable-librubberband \
+  --enable-libshine \
+  --enable-libspeex \
+  --enable-libsrt \
+  --enable-libssh \
+  --enable-libtwolame \
+  --enable-libvorbis \
+  --enable-libvpx \
+  --enable-libwebp \
+  --enable-libx264 \
+  --enable-libx265 \
+  --enable-libxvid \
+  || (cat ffbuild/config.log ; false) \
+  && make -j$(nproc) install
+
 # make sure binaries has no dependencies, is relro, pie and stack nx
 COPY checkelf /
 RUN \
@@ -391,7 +446,7 @@ RUN \
   /checkelf /usr/local/bin/ffprobe
 
 FROM scratch AS final1
-COPY --from=builder /versions.json /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /
+COPY --from=builder /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /
 COPY --from=builder /usr/local/share/doc/ffmpeg/* /doc/
 COPY --from=builder /etc/ssl/cert.pem /etc/ssl/cert.pem
 
