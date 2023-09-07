@@ -400,5 +400,4 @@ FROM scratch AS final2
 COPY --from=final1 / /
 
 FROM final2
-LABEL maintainer="Mattias Wadman mattias.wadman@gmail.com"
 ENTRYPOINT ["/ffmpeg"]
