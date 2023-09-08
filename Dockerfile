@@ -185,9 +185,9 @@ RUN \
 # bump: srt /SRT_VERSION=([\d.]+)/ https://github.com/Haivision/srt.git|^1
 # bump: srt after ./hashupdate Dockerfile SRT $LATEST
 # bump: srt link "Release notes" https://github.com/Haivision/srt/releases/tag/v$LATEST
-ARG SRT_VERSION=1.5.2
+ARG SRT_VERSION=1.5.3
 ARG SRT_URL="https://github.com/Haivision/srt/archive/v$SRT_VERSION.tar.gz"
-ARG SRT_SHA256=463970a3f575446b3f55abb6f323d5476c963c77b3c975cd902e9c87cdd9a92c
+ARG SRT_SHA256=befaeb16f628c46387b898df02bc6fba84868e86a6f6d8294755375b9932d777
 RUN \
   wget $WGET_OPTS -O libsrt.tar.gz "$SRT_URL" && \
   echo "$SRT_SHA256  libsrt.tar.gz" | sha256sum --status -c - && \
@@ -322,8 +322,8 @@ RUN \
 # bump: x265 /X265_VERSION=([[:xdigit:]]+)/ gitrefs:https://bitbucket.org/multicoreware/x265_git.git|re:#^refs/heads/master$#|@commit
 # bump: x265 after ./hashupdate Dockerfile X265 $LATEST
 # bump: x265 link "Source diff $CURRENT..$LATEST" https://bitbucket.org/multicoreware/x265_git/branches/compare/$LATEST..$CURRENT#diff
-ARG X265_VERSION=8f18e3ad32684eee95e885e718655f93951128c3
-ARG X265_SHA256=f657b2b0384fe737a65e02fa62057f59612aec7d2f694ab7449d6ada61bc4654
+ARG X265_VERSION=a05d9f5f7f4bea74792782720b6a4d028e99089e
+ARG X265_SHA256=a0acca450ee540c08d1397c04847debaebfe26450ea1cc63804873200c17d579
 ARG X265_URL="https://bitbucket.org/multicoreware/x265_git/get/$X265_VERSION.tar.bz2"
 # -w-macro-params-legacy to not log lots of asm warnings
 # https://bitbucket.org/multicoreware/x265_git/issues/559/warnings-when-assembling-with-nasm-215
