@@ -1,6 +1,4 @@
-# bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
-# bump: alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
-FROM amd64/alpine:latest AS builder
+FROM arm32v6/alpine:latest AS builder
 
 RUN apk --update --upgrade add \
   coreutils \
