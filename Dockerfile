@@ -1,8 +1,8 @@
 # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 # bump: alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
-FROM alpine:3.18.3 AS builder
+FROM alpine:latest AS builder
 
-RUN apk add --no-cache \
+RUN apk --update --upgrade add \
   coreutils \
   wget \
   rust cargo cargo-c \
