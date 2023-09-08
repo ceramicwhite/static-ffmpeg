@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 docker build \
     --file "${DOCKERFILE_PATH}" \

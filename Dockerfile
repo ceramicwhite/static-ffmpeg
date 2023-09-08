@@ -369,8 +369,8 @@ RUN \
   sed -i 's/add_ldexeflags -fPIE -pie/add_ldexeflags -fPIE -static-pie/' configure && \
   ./configure \
   --pkg-config-flags="--static" \
-  --extra-cflags="-fopenmp -O2" \
-  --extra-ldflags="-fopenmp -Wl,-z,stack-size=4194304" \
+  --extra-cflags="-fopenmp" \
+  --extra-ldflags="-fopenmp -Wl,-z,stack-size=2097152" \
   --toolchain=hardened \
     --disable-debug \
     --disable-shared \
@@ -383,7 +383,6 @@ RUN \
     --disable-avdevice \
     --disable-swscale \
     --disable-postproc \
-    --disable-ffmpeg \
     \
     --disable-iconv \
     --disable-zlib \
@@ -495,7 +494,7 @@ RUN \
   || (cat ffbuild/config.log ; false) \
   && make -j$(nproc) install
 
-# make sure binaries has no dependencies, is relro, pie and stack nx
+#make sure binaries has no dependencies, is relro, pie and stack nx
 COPY checkelf /
 RUN \
   /checkelf /usr/local/bin/ffmpeg && \

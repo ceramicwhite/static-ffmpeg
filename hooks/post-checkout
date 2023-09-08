@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 BUILD_ARCH=$(echo "${DOCKERFILE_PATH}" | cut -d '.' -f 2)
 
