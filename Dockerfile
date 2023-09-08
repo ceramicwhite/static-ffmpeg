@@ -410,6 +410,7 @@ RUN \
   --disable-debug \
   --disable-shared \
   --disable-ffplay \
+  --disable-doc \
   --enable-static \
   --enable-gpl \
   --enable-version3 \
@@ -455,4 +456,5 @@ FROM scratch AS final2
 COPY --from=final1 / /
 
 FROM final2
+
 ENTRYPOINT ["/ffmpeg"]
