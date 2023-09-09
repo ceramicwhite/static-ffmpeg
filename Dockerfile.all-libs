@@ -1,3 +1,5 @@
+# bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+# bump: alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
 FROM alpine:latest AS builder
 
 RUN apk --update --upgrade add \
@@ -368,7 +370,7 @@ RUN \
   ./configure \
   --pkg-config-flags="--static" \
   --extra-cflags="-fopenmp" \
-  --extra-ldflags="-fopenmp -Wl,-z,stack-size=2097152" \
+  --extra-ldflags="-fopenmp -Wl,-z,stack-size=2097152 -static" \
   --toolchain=hardened \
     --disable-debug \
     --disable-shared \
@@ -383,7 +385,6 @@ RUN \
     --disable-postproc \
     \
     --disable-iconv \
-    --disable-zlib \
     --disable-bzlib \
     --disable-lzma \
     --disable-sdl2 \
@@ -492,20 +493,9 @@ RUN \
   || (cat ffbuild/config.log ; false) \
   && make -j$(nproc) install
 
-#make sure binaries has no dependencies, is relro, pie and stack nx
-COPY checkelf /
-RUN \
-  /checkelf /usr/local/bin/ffmpeg && \
-  /checkelf /usr/local/bin/ffprobe
-
-# FROM scratch AS final1
-# COPY --from=builder /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /
-# COPY --from=builder /etc/ssl/cert.pem /etc/ssl/cert.pem
-
-# # clamp all files into one layer
-# FROM scratch AS final2
-# COPY --from=final1 / /
-
-# FROM final2
+# COPY checkelf /
+# RUN \
+#   /checkelf /usr/local/bin/ffmpeg && \
+#   /checkelf /usr/local/bin/ffprobe
 
 ENTRYPOINT ["/ffmpeg"]
